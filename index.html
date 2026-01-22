@@ -2,56 +2,97 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>WOFF Test</title>
+  <title>WOFF Redirect / Init Test</title>
   <script src="https://static.worksmobile.net/static/wm/woff/edge/3.6/sdk.js"></script>
 </head>
 <body>
 
-<!-- 有効画面（WOFF経由のみ） -->
+<!-- ================= 有効画面 ================= -->
 <div id="valid" style="display:none;">
   <h1 style="color: blue;">WOFFテスト成功！</h1>
-  <p id="user-info">読み込み中...</p>
+  <p id="user-info">プロフィール取得中...</p>
 </div>
 
-<!-- 無効画面（直アクセス等） -->
+<!-- ================= 無効画面 ================= -->
 <div id="invalid" style="display:none; color:red;">
   <h1>無効なアクセス</h1>
   <p>
     このページは LINE WORKS の WOFF からのみ利用できます。
   </p>
+  <p>
+    PC版 LINE WORKS では外部ブラウザで開かれる場合があります。<br>
+    その場合はスマホ版 LINE WORKS、またはアプリ一覧から起動してください。
+  </p>
+  <p id="error-msg"></p>
 </div>
+
+<!-- ================= デバッグ表示 ================= -->
+<h2>Debug Info</h2>
+<pre id="debug" style="white-space: pre-wrap; background:#f4f4f4; padding:10px;"></pre>
 
 <script>
   const MY_WOFF_ID = "r2Ff5XMgxVdYKkWtq0XgVA";
+
+  const debug = document.getElementById("debug");
+
+  function logDebug(msg) {
+    debug.innerText += msg + "\n";
+  }
 
   function showValid() {
     document.getElementById("valid").style.display = "block";
     document.getElementById("invalid").style.display = "none";
   }
 
-  function showInvalid() {
+  function showInvalid(msg) {
     document.getElementById("valid").style.display = "none";
     document.getElementById("invalid").style.display = "block";
+    if (msg) {
+      document.getElementById("error-msg").innerText = msg;
+    }
   }
 
-  // --- WOFF 初期化 ---
-  woff.init({ woffId: MY_WOFF_ID })
-    .then(() => {
-      // ✅ WOFF 経由
-      showValid();
+  // ===== URL / 環境情報表示 =====
+  logDebug("=== Location Info ===");
+  logDebug("href   : " + location.href);
+  logDebug("origin : " + location.origin);
+  logDebug("path   : " + location.pathname);
+  logDebug("search : " + location.search);
+  logDebug("hash   : " + location.hash);
+  logDebug("");
 
-      // プロフィール取得
-      return woff.getProfile();
-    })
-    .then(profile => {
-      document.getElementById("user-info").innerText =
-        profile.displayName + "さん、こんにちは！";
-    })
-    .catch(err => {
-      // ❌ WOFF ではない（直アクセス・URL不一致など）
-      console.warn("WOFF init failed:", err);
-      showInvalid();
-    });
+  logDebug("=== User Agent ===");
+  logDebug(navigator.userAgent);
+  logDebug("");
+
+  logDebug("=== woff object ===");
+  logDebug(String(window.woff));
+  logDebug("");
+
+  // ===== WOFF 初期化 =====
+  try {
+    woff.init({ woffId: MY_WOFF_ID })
+      .then(() => {
+        logDebug("woff.init(): SUCCESS");
+        showValid();
+
+        return woff.getProfile();
+      })
+      .then(profile => {
+        logDebug("woff.getProfile(): SUCCESS");
+        document.getElementById("user-info").innerText =
+          profile.displayName + "さん、こんにちは！";
+      })
+      .catch(err => {
+        logDebug("woff.init / getProfile ERROR:");
+        logDebug(String(err));
+        showInvalid("WOFF 初期化エラー: " + err);
+      });
+  } catch (e) {
+    logDebug("Exception thrown:");
+    logDebug(String(e));
+    showInvalid("例外発生: " + e);
+  }
 </script>
 
 </body>
