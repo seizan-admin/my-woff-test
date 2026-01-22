@@ -7,24 +7,24 @@
 </head>
 <body>
     <div id="content" style="display:none;">
-        <h1>WOFFƒeƒXƒg¬Œ÷I</h1>
+        <h1>WOFFãƒ†ã‚¹ãƒˆæˆåŠŸï¼</h1>
         <p id="user-info"></p>
     </div>
     <div id="error" style="display:none; color:red;">
         <h1>404 Not Found</h1>
-        <p>LINE WORKS‚©‚çƒAƒNƒZƒX‚µ‚Ä‚­‚¾‚³‚¢B</p>
+        <p>LINE WORKSã‹ã‚‰ã‚¢ã‚¯ã‚»ã‚¹ã—ã¦ãã ã•ã„ã€‚</p>
     </div>
 
     <script>
-        // ©•ª‚ÌWOFF ID‚É‘‚«Š·‚¦‚Ä‚­‚¾‚³‚¢iŒã‚Åì‚è‚Ü‚·j
-        const MY_WOFF_ID = "YOUR_WOFF_ID"; 
+        // è‡ªåˆ†ã®WOFF IDã«æ›¸ãæ›ãˆã¦ãã ã•ã„ï¼ˆå¾Œã§ä½œã‚Šã¾ã™ï¼‰
+        const MY_WOFF_ID = "r2Ff5XMgxVdYKkWtq0XgVA"; 
 
         woff.init({ woffId: MY_WOFF_ID })
             .then(() => {
                 if (woff.isInClient()) {
                     document.getElementById('content').style.display = 'block';
                     woff.getProfile().then(p => {
-                        document.getElementById('user-info').innerText = p.displayName + "‚³‚ñA‚±‚ñ‚É‚¿‚ÍI";
+                        document.getElementById('user-info').innerText = p.displayName + "ã•ã‚“ã€ã“ã‚“ã«ã¡ã¯ï¼";
                     });
                 } else {
                     document.getElementById('error').style.display = 'block';
@@ -37,3 +37,4 @@
     </script>
 </body>
 </html>
+
