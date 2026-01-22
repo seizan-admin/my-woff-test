@@ -11,16 +11,19 @@
         <p id="user-info"></p>
     </div>
     <div id="error" style="display:none; color:red;">
-        <h1>404 Not Found</h1>
-        <p>LINE WORKSからアクセスしてください。</p>
+        <h1>エラー：外部ブラウザです</h1>
+        <p>LINE WORKSのトークルームから開いてください。</p>
     </div>
 
     <script>
-        // 自分のWOFF IDに書き換えてください（後で作ります）
-        const MY_WOFF_ID = "r2Ff5XMgxVdYKkWtq0XgVA"; 
+        // ↓ここを Developer Console の ID に書き換え（" " は消さないでください）
+        const MY_WOFF_ID = "YOUR_WOFF_ID"; 
+
+        console.log("WOFF起動開始..."); // デバッグ用
 
         woff.init({ woffId: MY_WOFF_ID })
             .then(() => {
+                console.log("初期化成功");
                 if (woff.isInClient()) {
                     document.getElementById('content').style.display = 'block';
                     woff.getProfile().then(p => {
@@ -31,10 +34,10 @@
                 }
             })
             .catch(err => {
+                console.error("エラー発生:", err);
+                document.getElementById('error').innerHTML = "<h1>初期化エラー</h1><p>" + err + "</p>";
                 document.getElementById('error').style.display = 'block';
-                console.error(err);
             });
     </script>
 </body>
 </html>
-
