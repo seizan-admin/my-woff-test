@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>WOFF Test</title>
+    <script src="https://static.worksmobile.net/static/wm/woff/edge/3.0.0/sdk.js"></script>
+</head>
+<body>
+    <div id="content" style="display:none;">
+        <h1>WOFFテスト成功！</h1>
+        <p id="user-info"></p>
+    </div>
+    <div id="error" style="display:none; color:red;">
+        <h1>404 Not Found</h1>
+        <p>LINE WORKSからアクセスしてください。</p>
+    </div>
+
+    <script>
+        // 自分のWOFF IDに書き換えてください（後で作ります）
+        const MY_WOFF_ID = "YOUR_WOFF_ID"; 
+
+        woff.init({ woffId: MY_WOFF_ID })
+            .then(() => {
+                if (woff.isInClient()) {
+                    document.getElementById('content').style.display = 'block';
+                    woff.getProfile().then(p => {
+                        document.getElementById('user-info').innerText = p.displayName + "さん、こんにちは！";
+                    });
+                } else {
+                    document.getElementById('error').style.display = 'block';
+                }
+            })
+            .catch(err => {
+                document.getElementById('error').style.display = 'block';
+                console.error(err);
+            });
+    </script>
+</body>
+</html>
