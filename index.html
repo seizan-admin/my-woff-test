@@ -20,9 +20,10 @@
         const MY_WOFF_ID = "r2Ff5XMgxVdYKkWtq0XgVA"; 
 
         // 初期化処理
+        
         woff.init({ woffId: MY_WOFF_ID })
             .then(() => {
-                if (woff.isInClient()) {
+                if (woff.isInClient() || navigator.userAgent.indexOf('worksmobile') !== -1) {
                     // LINE WORKS内の場合
                     document.getElementById('content').style.display = 'block';
                     woff.getProfile().then(p => {
@@ -43,6 +44,7 @@
     </script>
 </body>
 </html>
+
 
 
 
