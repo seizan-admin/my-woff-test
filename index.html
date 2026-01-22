@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>WOFF Test</title>
-    <script src="https://static.worksmobile.net/static/wm/woff/edge/3.0.0/sdk.js"></script>
+    <script src="https://static.worksmobile.net/static/wm/woff/edge/sdk.js"></script>
 </head>
 <body>
     <div id="content" style="display:none;">
@@ -11,34 +11,35 @@
         <p id="user-info"></p>
     </div>
     <div id="error" style="display:none; color:red;">
-        <h1>エラー：外部ブラウザです</h1>
-        <p>LINE WORKSのトークルームから開いてください。</p>
+        <h1>エラー</h1>
+        <p id="error-msg">LINE WORKSのトークルームから開いてください。</p>
     </div>
 
     <script>
-        // ↓ここを Developer Console の ID に書き換え（" " は消さないでください）
-        const MY_WOFF_ID = "r2Ff5XMgxVdYKkWtq0XgVA"; 
+        // お使いの WOFF ID です
+        const MY_WOFF_ID = "r2Ff5XMgxVdYKkWtq0XgvA"; 
 
-        console.log("WOFF起動開始..."); // デバッグ用
-
+        // 初期化処理
         woff.init({ woffId: MY_WOFF_ID })
             .then(() => {
-                console.log("初期化成功");
                 if (woff.isInClient()) {
+                    // LINE WORKS内の場合
                     document.getElementById('content').style.display = 'block';
                     woff.getProfile().then(p => {
                         document.getElementById('user-info').innerText = p.displayName + "さん、こんにちは！";
+                    }).catch(e => {
+                        document.getElementById('user-info').innerText = "プロフィール取得失敗: " + e.message;
                     });
                 } else {
+                    // 外部ブラウザの場合
                     document.getElementById('error').style.display = 'block';
                 }
             })
             .catch(err => {
-                console.error("エラー発生:", err);
-                document.getElementById('error').innerHTML = "<h1>初期化エラー</h1><p>" + err + "</p>";
+                // 初期化失敗時
                 document.getElementById('error').style.display = 'block';
+                document.getElementById('error-msg').innerText = "初期化エラー: " + err;
             });
     </script>
 </body>
 </html>
-
