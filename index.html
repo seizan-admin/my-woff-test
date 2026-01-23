@@ -2,38 +2,42 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>WOFF Redirect / Login Test</title>
+  <title>WOFF Profile Dump</title>
   <script src="https://static.worksmobile.net/static/wm/woff/edge/3.6/sdk.js"></script>
 </head>
 <body>
 
-<!-- ================= 有効画面 ================= -->
 <div id="valid" style="display:none;">
-  <h1 style="color: blue;">WOFFテスト</h1>
+  <h1 style="color: blue;">WOFFテスト（getProfile 全表示）</h1>
+
   <p id="user-info">処理中...</p>
 
   <!-- 未ログイン時にだけ表示 -->
   <button id="login-btn" style="display:none;">ログインする</button>
+
+  <h2>getProfile() result (all fields)</h2>
+  <pre id="profile-json" style="white-space: pre-wrap; background:#f4f4f4; padding:10px;"></pre>
+
+  <h2>getContext() result</h2>
+  <pre id="context-json" style="white-space: pre-wrap; background:#f4f4f4; padding:10px;"></pre>
 </div>
 
-<!-- ================= 無効画面 ================= -->
 <div id="invalid" style="display:none; color:red;">
-  <h1>無効なアクセス</h1>
-  <p>このページは LINE WORKS の WOFF からのみ利用できます。</p>
+  <h1>エラー</h1>
   <p id="error-msg"></p>
 </div>
 
-<!-- ================= デバッグ表示 ================= -->
 <h2>Debug Info</h2>
 <pre id="debug" style="white-space: pre-wrap; background:#f4f4f4; padding:10px;"></pre>
 
 <script>
-  // あなたの WOFF ID
   const MY_WOFF_ID = "r2Ff5XMgxVdYKkWtq0XgVA";
 
   const debug = document.getElementById("debug");
   const userInfo = document.getElementById("user-info");
   const loginBtn = document.getElementById("login-btn");
+  const profileJson = document.getElementById("profile-json");
+  const contextJson = document.getElementById("context-json");
 
   function log(msg) { debug.innerText += msg + "\n"; }
 
@@ -49,72 +53,70 @@
     document.getElementById("error-msg").innerText = msg || "";
   }
 
-  // 戻り先URL（GitHub Pagesの末尾スラッシュ等の揺れ防止のため「今のページ」に固定）
+  // 戻り先URL（今のページに固定）
   const REDIRECT_URI = location.origin + location.pathname;
 
-  // デバッグ出力
+  // Debug
   log("=== Location Info ===");
   log("href        : " + location.href);
   log("redirectUri : " + REDIRECT_URI);
-  log("origin      : " + location.origin);
-  log("path        : " + location.pathname);
-  log("search      : " + location.search);
-  log("hash        : " + location.hash);
   log("");
   log("=== User Agent ===");
   log(navigator.userAgent);
   log("");
-  log("=== woff object ===");
-  log(String(window.woff));
-  log("");
 
-  // ログイン処理（ボタン押下で実行）
   function doLogin() {
     log("Calling woff.login() ...");
     showValid("ログイン画面へ遷移します...");
-    // ここで認証画面へリダイレクト → 認証後にこのページへ戻る（再読み込み）
+    // 認証→このページへ戻る（再読み込み）
     woff.login({ redirectUri: REDIRECT_URI });
   }
-
   loginBtn.addEventListener("click", doLogin);
 
-  // --- WOFFフロー本体 ---
+  // まず init
   woff.init({ woffId: MY_WOFF_ID })
-    .then(() => {
+    .then(async () => {
       log("woff.init(): SUCCESS");
       showValid("初期化OK。ログイン状態を確認中...");
 
-      // isLoggedInが使える場合はログイン状態を判定
+      // 参考：コンテキスト表示（外部ブラウザだと viewType が external になったりします）
+      try {
+        const ctx = await woff.getContext();
+        contextJson.innerText = JSON.stringify(ctx, null, 2);
+      } catch (e) {
+        contextJson.innerText = "getContext failed: " + String(e);
+      }
+
+      // 未ログインならボタン表示して止める
       if (typeof woff.isLoggedIn === "function") {
         const loggedIn = woff.isLoggedIn();
         log("woff.isLoggedIn(): " + loggedIn);
-
         if (!loggedIn) {
-          // 未ログイン：ボタン表示してユーザー操作でログイン
           loginBtn.style.display = "inline-block";
           showValid("未ログインです。「ログインする」を押してください。");
-          return null; // ここで止める（getProfileは呼ばない）
+          return;
         }
       } else {
-        // isLoggedInが無い環境は、とりあえずgetProfileを試す
         log("woff.isLoggedIn(): not available");
       }
 
-      // ログイン済みならプロフィール取得
-      log("calling woff.getProfile() ...");
-      return woff.getProfile();
-    })
-    .then(profile => {
-      if (!profile) return; // 未ログインで止めた場合など
-      log("woff.getProfile(): SUCCESS");
+      // ログイン済みなら getProfile
+      showValid("ログイン済み。getProfile 取得中...");
+      const p = await woff.getProfile();
+
+      // ★ 全フィールド dump
+      profileJson.innerText = JSON.stringify(p, null, 2);
+
+      // 画面上の挨拶（displayName が無いケースにも備える）
+      const name = (p && p.displayName) ? p.displayName : "(no displayName)";
+      showValid(name + " さん、こんにちは！");
       loginBtn.style.display = "none";
-      showValid(profile.displayName + "さん、こんにちは！");
+
+      // 仕様上は domainId/userId/displayName の3つが基本 :contentReference[oaicite:2]{index=2}
+      log("getProfile keys: " + Object.keys(p || {}).join(", "));
     })
     .catch(err => {
-      log("WOFF ERROR:");
-      log(String(err));
-
-      // ここに来るのは init 失敗、または getProfile 失敗など
+      log("WOFF ERROR: " + String(err));
       showInvalid("WOFF エラー: " + err);
     });
 </script>
