@@ -2,105 +2,71 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>WOFF PC Login Test</title>
+  <title>WOFF External Browser Login Test</title>
   <script src="https://static.worksmobile.net/static/wm/woff/edge/3.6/sdk.js"></script>
 </head>
 <body>
 
-<div id="valid" style="display:none;">
-  <h1 style="color: blue;">WOFFテスト</h1>
-  <p id="user-info">処理中...</p>
-  <button id="login-btn" style="display:none;">ログインする</button>
+<div id="ok" style="display:none;">
+  <h1 style="color: blue;">WOFF OK</h1>
+  <p id="msg">処理中...</p>
 </div>
 
-<div id="invalid" style="display:none; color:red;">
-  <h1>無効なアクセス</h1>
-  <p>このページは LINE WORKS の WOFF からのみ利用できます。</p>
-  <p id="error-msg"></p>
+<div id="ng" style="display:none; color:red;">
+  <h1>エラー</h1>
+  <p id="err"></p>
 </div>
 
-<h2>Debug Info</h2>
 <pre id="debug" style="white-space: pre-wrap; background:#f4f4f4; padding:10px;"></pre>
 
 <script>
-  const MY_WOFF_ID = "r2Ff5XMgxVdYKkWtq0XgVA";
+  const WOFF_ID = "r2Ff5XMgxVdYKkWtq0XgVA";
   const debug = document.getElementById("debug");
-  const userInfo = document.getElementById("user-info");
-  const loginBtn = document.getElementById("login-btn");
+  const msg = document.getElementById("msg");
 
-  function log(msg) { debug.innerText += msg + "\n"; }
+  function log(s){ debug.innerText += s + "\n"; }
+  function showOK(s){ document.getElementById("ok").style.display="block"; document.getElementById("ng").style.display="none"; if(s) msg.innerText=s; }
+  function showNG(e){ document.getElementById("ng").style.display="block"; document.getElementById("ok").style.display="none"; document.getElementById("err").innerText=String(e); }
 
-  function showValid(msg) {
-    document.getElementById("valid").style.display = "block";
-    document.getElementById("invalid").style.display = "none";
-    if (msg) userInfo.innerText = msg;
-  }
-
-  function showInvalid(msg) {
-    document.getElementById("valid").style.display = "none";
-    document.getElementById("invalid").style.display = "block";
-    document.getElementById("error-msg").innerText = msg || "";
-  }
-
-  // GitHub PagesのURL揺れ事故を避けるため、今のパスに固定
+  // 戻り先は「今いるページ」に固定（URL揺れ防止）
   const REDIRECT_URI = location.origin + location.pathname;
 
-  // デバッグ表示
-  log("=== Location Info ===");
   log("href        : " + location.href);
   log("redirectUri : " + REDIRECT_URI);
-  log("");
-  log("=== User Agent ===");
-  log(navigator.userAgent);
-  log("");
-  log("=== woff object ===");
-  log(String(window.woff));
+  log("ua          : " + navigator.userAgent);
   log("");
 
-  function doLogin() {
-    log("Calling woff.login() ...");
-    showValid("ログイン画面へ遷移します（外部ブラウザなら別画面/別タブになることがあります）...");
-    // ここでリダイレクト（認証→戻る）が発生するのが正常
-    woff.login({ redirectUri: REDIRECT_URI });
-  }
-
-  loginBtn.addEventListener("click", doLogin);
-
-  woff.init({ woffId: MY_WOFF_ID })
-    .then(() => {
+  woff.init({ woffId: WOFF_ID })
+    .then(async () => {
       log("woff.init(): SUCCESS");
-      showValid("初期化OK。ログイン状態を確認中...");
+      showOK("初期化OK。ログイン状態を確認中...");
 
-      // まずログイン状態を確認
+      // 外部ブラウザでは未ログインになりがち → loginへ
       if (typeof woff.isLoggedIn === "function") {
         const loggedIn = woff.isLoggedIn();
         log("woff.isLoggedIn(): " + loggedIn);
 
         if (!loggedIn) {
-          // 未ログインなら login を実行（自動遷移できない環境向けにボタンも出す）
-          loginBtn.style.display = "inline-block";
-          showValid("未ログインです。「ログインする」を押してください。");
-          // 自動で飛ばしたいなら次の1行を有効化
-          // doLogin();
-          return null;
+          showOK("未ログインです。ログイン画面へ遷移します...");
+          log("calling woff.login() ...");
+
+          // ここで認証画面へリダイレクト → 認証後このページへ戻って再読み込み
+          woff.login({ redirectUri: REDIRECT_URI });
+          return; // ここで処理は終わる（戻ってきた後に再実行される）
         }
       } else {
-        log("woff.isLoggedIn(): (not available)");
+        log("woff.isLoggedIn(): not available");
       }
 
-      // ログイン済みならプロフィール取得
-      log("calling woff.getProfile() ...");
-      return woff.getProfile();
-    })
-    .then(profile => {
-      if (!profile) return; // 未ログインで止めた場合
+      // ログイン済みならAPIを呼べる（access_tokenがある）
+      showOK("ログイン済み。プロフィール取得中...");
+      const p = await woff.getProfile();
       log("woff.getProfile(): SUCCESS");
-      showValid(profile.displayName + "さん、こんにちは！");
+      showOK(`${p.displayName}さん、こんにちは！`);
     })
     .catch(err => {
-      log("WOFF ERROR:");
-      log(String(err));
-      showInvalid("WOFF エラー: " + err);
+      log("WOFF ERROR: " + String(err));
+      showNG(err);
     });
 </script>
 
