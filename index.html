@@ -2,24 +2,24 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>WOFF Profile Dump</title>
+  <title>WOFF getAccessToken Test</title>
   <script src="https://static.worksmobile.net/static/wm/woff/edge/3.6/sdk.js"></script>
 </head>
 <body>
 
 <div id="valid" style="display:none;">
-  <h1 style="color: blue;">WOFFテスト（getProfile 全表示）</h1>
+  <h1 style="color: blue;">WOFF getAccessToken テスト</h1>
 
-  <p id="user-info">処理中...</p>
+  <p id="status">処理中...</p>
 
-  <!-- 未ログイン時にだけ表示 -->
+  <!-- 未ログイン時のみ表示 -->
   <button id="login-btn" style="display:none;">ログインする</button>
 
-  <h2>getProfile() result (all fields)</h2>
-  <pre id="profile-json" style="white-space: pre-wrap; background:#f4f4f4; padding:10px;"></pre>
+  <h2>Profile</h2>
+  <pre id="profile" style="background:#f4f4f4; padding:10px;"></pre>
 
-  <h2>getContext() result</h2>
-  <pre id="context-json" style="white-space: pre-wrap; background:#f4f4f4; padding:10px;"></pre>
+  <h2>Access Token（⚠テスト用）</h2>
+  <pre id="token" style="background:#ffecec; padding:10px; word-break: break-all;"></pre>
 </div>
 
 <div id="invalid" style="display:none; color:red;">
@@ -31,20 +31,20 @@
 <pre id="debug" style="white-space: pre-wrap; background:#f4f4f4; padding:10px;"></pre>
 
 <script>
-  const MY_WOFF_ID = "r2Ff5XMgxVdYKkWtq0XgVA";
+  const WOFF_ID = "r2Ff5XMgxVdYKkWtq0XgVA";
 
-  const debug = document.getElementById("debug");
-  const userInfo = document.getElementById("user-info");
+  const statusEl = document.getElementById("status");
   const loginBtn = document.getElementById("login-btn");
-  const profileJson = document.getElementById("profile-json");
-  const contextJson = document.getElementById("context-json");
+  const profileEl = document.getElementById("profile");
+  const tokenEl = document.getElementById("token");
+  const debugEl = document.getElementById("debug");
 
-  function log(msg) { debug.innerText += msg + "\n"; }
+  function log(msg) { debugEl.innerText += msg + "\n"; }
 
   function showValid(msg) {
     document.getElementById("valid").style.display = "block";
     document.getElementById("invalid").style.display = "none";
-    if (msg) userInfo.innerText = msg;
+    if (msg) statusEl.innerText = msg;
   }
 
   function showInvalid(msg) {
@@ -53,67 +53,54 @@
     document.getElementById("error-msg").innerText = msg || "";
   }
 
-  // 戻り先URL（今のページに固定）
+  // 戻り先URL（URL揺れ防止）
   const REDIRECT_URI = location.origin + location.pathname;
 
   // Debug
-  log("=== Location Info ===");
   log("href        : " + location.href);
   log("redirectUri : " + REDIRECT_URI);
-  log("");
-  log("=== User Agent ===");
-  log(navigator.userAgent);
+  log("userAgent   : " + navigator.userAgent);
   log("");
 
   function doLogin() {
-    log("Calling woff.login() ...");
+    log("calling woff.login()");
     showValid("ログイン画面へ遷移します...");
-    // 認証→このページへ戻る（再読み込み）
     woff.login({ redirectUri: REDIRECT_URI });
   }
   loginBtn.addEventListener("click", doLogin);
 
-  // まず init
-  woff.init({ woffId: MY_WOFF_ID })
+  // ===== WOFF フロー =====
+  woff.init({ woffId: WOFF_ID })
     .then(async () => {
       log("woff.init(): SUCCESS");
       showValid("初期化OK。ログイン状態を確認中...");
 
-      // 参考：コンテキスト表示（外部ブラウザだと viewType が external になったりします）
-      try {
-        const ctx = await woff.getContext();
-        contextJson.innerText = JSON.stringify(ctx, null, 2);
-      } catch (e) {
-        contextJson.innerText = "getContext failed: " + String(e);
-      }
-
-      // 未ログインならボタン表示して止める
+      // ログイン判定
       if (typeof woff.isLoggedIn === "function") {
         const loggedIn = woff.isLoggedIn();
         log("woff.isLoggedIn(): " + loggedIn);
+
         if (!loggedIn) {
           loginBtn.style.display = "inline-block";
           showValid("未ログインです。「ログインする」を押してください。");
           return;
         }
-      } else {
-        log("woff.isLoggedIn(): not available");
       }
 
-      // ログイン済みなら getProfile
-      showValid("ログイン済み。getProfile 取得中...");
-      const p = await woff.getProfile();
+      // プロフィール取得
+      showValid("ログイン済み。プロフィール取得中...");
+      const profile = await woff.getProfile();
+      profileEl.innerText = JSON.stringify(profile, null, 2);
 
-      // ★ 全フィールド dump
-      profileJson.innerText = JSON.stringify(p, null, 2);
+      // ★ Access Token 取得（テスト用）
+      showValid("アクセストークン取得中...");
+      const token = await woff.getAccessToken();
 
-      // 画面上の挨拶（displayName が無いケースにも備える）
-      const name = (p && p.displayName) ? p.displayName : "(no displayName)";
-      showValid(name + " さん、こんにちは！");
-      loginBtn.style.display = "none";
+      tokenEl.innerText = token;
+      log("getAccessToken(): SUCCESS");
+      log("token length: " + token.length);
 
-      // 仕様上は domainId/userId/displayName の3つが基本 :contentReference[oaicite:2]{index=2}
-      log("getProfile keys: " + Object.keys(p || {}).join(", "));
+      showValid("完了（テスト用にアクセストークンを表示しています）");
     })
     .catch(err => {
       log("WOFF ERROR: " + String(err));
